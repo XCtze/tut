@@ -142,8 +142,7 @@ end
 and so on and so forth.
 
 now, your script should llke this:
-
-local Pl = game:GetService("Players")
+local Players = game:GetService("Players")
 local Rs = game:GetService("ReplicatedStorage")
 
 local function format_number(number)
@@ -159,7 +158,7 @@ local function format_number(number)
 end
 
 local function calculateAverageStats(Pl)
-    local data = Rs:FindFirstChild("Datas") and Rs.Datas:FindFirstChild(Pl.UserId)
+    local data = Rs:FindFirstChild("Datas") and Rs.Datas:FindFirstChild(tostring(Pl.UserId))
     if not data then return 0 end
 
     local strength = data:FindFirstChild("Strength") and data.Strength.Value or 0
@@ -170,13 +169,10 @@ local function calculateAverageStats(Pl)
     return (strength + energy + defense + speed) / 4
 end
 
-local data = Rs:FindFirstChild("Datas") and Rs.Datas:FindFirstChild(player.UserId)
-local rebirths = data and data:FindFirstChild("Rebirth") and data.Rebirth.Value or 0
-
 local function setup_leaderboard(Pl)
     local leaderstats = Instance.new("Folder")
     leaderstats.Name = "leaderstats"
-    leaderstats.Parent = player
+    leaderstats.Parent = Pl  -- Fixed variable name
 
     local rebirths = Instance.new("IntValue")
     rebirths.Name = "Rebs"
@@ -188,33 +184,35 @@ local function setup_leaderboard(Pl)
     stats.Value = "0"
     stats.Parent = leaderstats
 
-
     local function update_stats()
-            while task.wait(0) do
-                if Pl.Parent then
-                    -- Fetch rebirths
-                    local data = Rs:FindFirstChild("Datas") and Rs.Datas:FindFirstChild(Pl.UserId)
-                    rebirths.Value = data and data:FindFirstChild("Rebirth") and data.Rebirth.Value or 0
-    
-                    -- Update stats
-                    stats.Value = calculate_average_stats(Pl)
-                else
-                    break
-                end
+        while task.wait(1) do  -- Fixed infinite loop speed
+            if Pl.Parent then
+                -- Fetch rebirths
+                local data = Rs:FindFirstChild("Datas") and Rs.Datas:FindFirstChild(tostring(Pl.UserId))
+                rebirths.Value = data and data:FindFirstChild("Rebirth") and data.Rebirth.Value or 0
+
+                -- Update stats
+                stats.Value = tostring(format_number(calculateAverageStats(Pl)))
+            else
+                break
             end
         end
-    
-        task.spawn(update_stats)
     end
+
+    task.spawn(update_stats)
+end
 
 Players.PlayerAdded:Connect(function(Pl)
     setup_leaderboard(Pl)
 end)
 
-
 for _, Pl in ipairs(Players:GetPlayers()) do
     setup_leaderboard(Pl)
 end
+
+
+(i changed a few things, like fixing variables, and slower wait times so its not constantly checkin stats and make lag)
+
 
 now, test your reader by going ingame and executing it!
 
