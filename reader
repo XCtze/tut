@@ -1,1 +1,224 @@
+first define every player ingame as a variable or wtv
+ex: local Players = game:GetService("Players") | or you can do local Pl = game:GetService("Players"), either works, as long as it includes local _ = game:GetService("Players").
+then, have another variable that finds replicatedstorage, where player data is found. 
+ex: local ReplicatedStorage = game:GetService("ReplicatedStorage") | again, you can change it to something shorter like local Rs = game:GetService("ReplicatedStorage")
+
+so far, you should have something like this
+
+local Pl = game:GetService("Players")
+local Rs = game:GetService("ReplicatedStorage")
+
+now, to find the stats of the player, i like to add the stats up and average them together.
+u can do this by doing the following line:
+local function calculateAverageStats(player)
+  local data = Rs:FindFirstChild("Datas") and Rs.Datas:FindFirstChild(player.UserId)
+  if not data then return 0 end 
+
+this finds the data for players.
+cont. script:
+
+    local strength = data:FindFirstChild("Strength") and data.Strength.Value or 0
+    local energy = data:FindFirstChild("Energy") and data.Energy.Value or 0
+    local defense = data:FindFirstChild("Defense") and data.Defense.Value or 0
+    local speed = data:FindFirstChild("Speed") and data.Speed.Value or 0
+  
+this finds all stats.
+now, to average the stats together you'd add some math into it.
+you'd put strength + energy + def. + speed and divide it by four.
+ex: return (strength + energy + defense + speed) / 4
+
+now, your script should look like this.
+
+local Pl = game:GetService("Players")
+local Rs = game:GetService("ReplicatedStorage")
+
+local function calculateAverageStats(Pl)
+    local data = Rs:FindFirstChild("Datas") and Rs.Datas:FindFirstChild(Pl.UserId)
+    if not data then return 0 end
+
+    local strength = data:FindFirstChild("Strength") and data.Strength.Value or 0
+    local energy = data:FindFirstChild("Energy") and data.Energy.Value or 0
+    local defense = data:FindFirstChild("Defense") and data.Defense.Value or 0
+    local speed = data:FindFirstChild("Speed") and data.Speed.Value or 0
+
+    return (strength + energy + defense + speed) / 4
+end
+
+now that you have player stats, you'll need rebirths.
+heres how u can do that
+
+    local data = Rs:FindFirstChild("Datas") and Rs.Datas:FindFirstChild(player.UserId)
+    local rebirths = data and data:FindFirstChild("Rebirth") and data.Rebirth.Value or 0
+
+this finds rebirths, and if there are no rebirths it returns, or tells you, they have 0 rebirths. same thing with stats, i just forgot to put it there.
+now to make the reader actually read, which is pretty easy.
+
+you're going to have to understand a thing called "leaderstats", which puts data into the leaderboard for easier accessibility, and so you're not wasting time making a gui.
+
+so first, you'd do this:
+local function setup_leaderboard(Pl)
+
+then add
+
+    local leaderstats = Instance.new("Folder")
+    leaderstats.Name = "leaderstats"
+    leaderstats.Parent = player
+
+this creates your leaderstats folder.
+
+now to add the rebirths.
+you'd do this:
+
+    local rebirths = Instance.new("IntValue")
+    rebirths.Name = "Rebs"
+    rebirths.Value = 0
+    rebirths.Parent = leaderstats
+
+this gets the rebirth data you grabbed and puts it on the leaderboard.
+
+next, stats.
+
+    local stats = Instance.new("StringValue")
+    stats.Name = "Stats"
+    stats.Value = "0"
+    stats.Parent = leaderstats
+
+does the same thing.
+now whats the point of a stat reader if it doesnt give accurate reads?
+you're going to want to add a stat updater.
+
+    local function update_stats()
+            while task.wait(0) do
+                if Pl.Parent then
+                    -- Fetch rebirths
+                    local data = Rs:FindFirstChild("Datas") and Rs.Datas:FindFirstChild(Pl.UserId)
+                    rebirths.Value = data and data:FindFirstChild("Rebirth") and data.Rebirth.Value or 0
+    
+                    -- Update stats
+                    stats.Value = calculate_average_stats(Pl)
+                else
+                    break
+                end
+            end
+        end
+    
+        task.spawn(update_stats)
+    end
+
+this will update the stats automatically and instantly.
+now to have people joining the game and you still want to read their stats, you'd do something like this:
+
+Players.PlayerAdded:Connect(function(Pl)
+    setup_leaderboard(Pl)
+end)
+
+this is for new players joining in
+and this:
+
+for _, Pl in ipairs(Players:GetPlayers()) do
+    setup_leaderboard(Pl)
+end
+
+is to get players already ingame and make sure you're reading them.
+
+but wait! wouldnt it get messy giving the full stats for each player? wont you want to abbreviate their stats?
+i have just the fix. you'd add this near the start of your script, where you're grabbing stat data; just above that.
+
+local function format_number(number)
+    local suffixes = {"", "K", "M", "B", "T", "QD"}
+    local suffix_index = 1
+
+    while math.abs(number) >= 1000 and suffix_index < #suffixes do
+        number = number / 1000.0
+        suffix_index = suffix_index + 1
+    end
+
+    return string.format("%.2f%s", number, suffixes[suffix_index])
+end
+
+" ": anything under 1k, which is pretty pointless.
+"K" 1k-999k
+"M" 1m-999m
+and so on and so forth.
+
+now, your script should llke this:
+
+local Pl = game:GetService("Players")
+local Rs = game:GetService("ReplicatedStorage")
+
+local function format_number(number)
+    local suffixes = {"", "K", "M", "B", "T", "QD"}
+    local suffix_index = 1
+
+    while math.abs(number) >= 1000 and suffix_index < #suffixes do
+        number = number / 1000.0
+        suffix_index = suffix_index + 1
+    end
+
+    return string.format("%.2f%s", number, suffixes[suffix_index])
+end
+
+local function calculateAverageStats(Pl)
+    local data = Rs:FindFirstChild("Datas") and Rs.Datas:FindFirstChild(Pl.UserId)
+    if not data then return 0 end
+
+    local strength = data:FindFirstChild("Strength") and data.Strength.Value or 0
+    local energy = data:FindFirstChild("Energy") and data.Energy.Value or 0
+    local defense = data:FindFirstChild("Defense") and data.Defense.Value or 0
+    local speed = data:FindFirstChild("Speed") and data.Speed.Value or 0
+
+    return (strength + energy + defense + speed) / 4
+end
+
+local data = Rs:FindFirstChild("Datas") and Rs.Datas:FindFirstChild(player.UserId)
+local rebirths = data and data:FindFirstChild("Rebirth") and data.Rebirth.Value or 0
+
+local function setup_leaderboard(Pl)
+    local leaderstats = Instance.new("Folder")
+    leaderstats.Name = "leaderstats"
+    leaderstats.Parent = player
+
+    local rebirths = Instance.new("IntValue")
+    rebirths.Name = "Rebs"
+    rebirths.Value = 0
+    rebirths.Parent = leaderstats
+
+    local stats = Instance.new("StringValue")
+    stats.Name = "Stats"
+    stats.Value = "0"
+    stats.Parent = leaderstats
+
+
+    local function update_stats()
+            while task.wait(0) do
+                if Pl.Parent then
+                    -- Fetch rebirths
+                    local data = Rs:FindFirstChild("Datas") and Rs.Datas:FindFirstChild(Pl.UserId)
+                    rebirths.Value = data and data:FindFirstChild("Rebirth") and data.Rebirth.Value or 0
+    
+                    -- Update stats
+                    stats.Value = calculate_average_stats(Pl)
+                else
+                    break
+                end
+            end
+        end
+    
+        task.spawn(update_stats)
+    end
+
+Players.PlayerAdded:Connect(function(Pl)
+    setup_leaderboard(Pl)
+end)
+
+
+for _, Pl in ipairs(Players:GetPlayers()) do
+    setup_leaderboard(Pl)
+end
+
+now, test your reader by going ingame and executing it!
+
+
+
+
 
